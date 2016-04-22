@@ -65,9 +65,9 @@ const char* ts3plugin_name() {
 	/* TeamSpeak expects UTF-8 encoded characters. Following demonstrates a possibility how to convert UTF-16 wchar_t into UTF-8. */
 	static char* result = NULL;  /* Static variable so it's allocated only once */
 	if(!result) {
-		const wchar_t* name = L"Test Plugin";
+		const wchar_t* name = L"UnmuteMe";
 		if(wcharToUtf8(name, &result) == -1) {  /* Convert name into UTF-8 encoded result */
-			result = "Test Plugin";  /* Conversion failed, fallback here */
+			result = "UnmuteMe";  /* Conversion failed, fallback here */
 		}
 	}
 	return result;
@@ -89,13 +89,13 @@ int ts3plugin_apiVersion() {
 /* Plugin author */
 const char* ts3plugin_author() {
 	/* If you want to use wchar_t, see ts3plugin_name() on how to use */
-    return "TeamSpeak Systems GmbH";
+    return "NihonNukite";
 }
 
 /* Plugin description */
 const char* ts3plugin_description() {
 	/* If you want to use wchar_t, see ts3plugin_name() on how to use */
-    return "This plugin demonstrates the TeamSpeak 3 client plugin architecture.";
+    return "This plugin aims to reduce pain of ACRE muting people. It will unmute all clients when you join a channel and will unmute individual clients as they join a channel. This plugin will not unmute you for other clients.";
 }
 
 /* Set TeamSpeak 3 callback functions */
@@ -724,6 +724,73 @@ void ts3plugin_onUpdateClientEvent(uint64 serverConnectionHandlerID, anyID clien
 
 //REQUIRED
 void ts3plugin_onClientMoveEvent(uint64 serverConnectionHandlerID, anyID clientID, uint64 oldChannelID, uint64 newChannelID, int visibility, const char* moveMessage) {
+	
+	//ID of own client
+	anyID myID;
+
+	/* Get own client ID */
+	if (ts3Functions.getClientID(serverConnectionHandlerID, &myID) != ERROR_ok) {  
+		ts3Functions.logMessage("Error querying own client id", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
+		return;
+	}
+
+	//Unmute all muted clients when this user enters a new channel
+	if (clientID == myID) {
+		//will store clients in current channel
+		anyID* clientsInChannel;
+
+		__try {
+
+			if (ts3Functions.getChannelClientList(serverConnectionHandlerID, newChannelID, &clientsInChannel) == ERROR_ok) {
+				//unmute each client in the current channel
+				/*for (unsigned int i = 0; clientsInChannel[i] != NULL; i++) {
+					(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, clientsInChannel[i], NULL);
+				}*/
+				//unsigned int i = 0;
+				__try {
+					for (int i = 0; clientsInChannel[i] != 0;/*i < 3;*/  i++) {
+						//printf("Client ID: %u\n", clientsInChannel[i]);
+						if (clientsInChannel[i] != myID) {
+							(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, (&clientsInChannel[i]), NULL);
+						}
+					}
+				}
+				__except (puts("test?"), EXCEPTION_EXECUTE_HANDLER) {
+					if (ts3Functions.requestSendPrivateTextMsg(serverConnectionHandlerID, "stuff broke", clientID, NULL) != ERROR_ok) {
+						ts3Functions.logMessage("Error requesting send text message", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
+					}
+				}
+
+				/*while (clientsInChannel[i]) {
+					__try {
+						(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, clientsInChannel, NULL);
+						i++;
+					}
+					__except (puts("test?"), EXCEPTION_EXECUTE_HANDLER) {
+						if (ts3Functions.requestSendPrivateTextMsg(serverConnectionHandlerID, "stuff broke", clientID, NULL) != ERROR_ok) {
+							ts3Functions.logMessage("Error requesting send text message", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
+						}
+						break;
+					}
+
+				}*/
+			}
+			else {
+				//display error to user
+				printf("UnmuteMe ERROR: Could not unmute clients on channel jonin.");
+			}
+		}
+		__except (puts("test?"), EXCEPTION_EXECUTE_HANDLER) {
+			if (ts3Functions.requestSendPrivateTextMsg(serverConnectionHandlerID, "stuff broke before I thought it should", clientID, NULL) != ERROR_ok) {
+				ts3Functions.logMessage("Error requesting send text message", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
+			}
+		}
+	}
+	else {
+		//Only unmute joining user when not current client.
+		(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, &clientID, NULL);
+	}
+	
 }
 
 void ts3plugin_onClientMoveSubscriptionEvent(uint64 serverConnectionHandlerID, anyID clientID, uint64 oldChannelID, uint64 newChannelID, int visibility) {

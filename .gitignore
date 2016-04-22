@@ -8,3 +8,8 @@
 *.pdb
 *.opendb
 *.db
+*.dll
+*.suo
+*.exp
+*.ilk
+*.lib
