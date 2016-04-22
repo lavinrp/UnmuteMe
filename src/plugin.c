@@ -724,7 +724,7 @@ void ts3plugin_onUpdateClientEvent(uint64 serverConnectionHandlerID, anyID clien
 
 //REQUIRED
 
-//Unmutes all clients in the 
+//Unmutes all clients in the passed channel with the exception of the own client.
 void unmuteAllInChannel(anyID ownClientID, uint64 channelID, uint64 serverConnectionHandlerID) {
 	//will store clients in current channel
 	anyID* clientsInChannel;
