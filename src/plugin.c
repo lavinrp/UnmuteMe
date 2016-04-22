@@ -724,8 +724,27 @@ void ts3plugin_onUpdateClientEvent(uint64 serverConnectionHandlerID, anyID clien
 
 //REQUIRED
 
-void unmuteAllInChannel(anyID ownClientID, uint64 channelID) {
+//Unmutes all clients in the 
+void unmuteAllInChannel(anyID ownClientID, uint64 channelID, uint64 serverConnectionHandlerID) {
+	//will store clients in current channel
+	anyID* clientsInChannel;
 
+	if (ts3Functions.getChannelClientList(serverConnectionHandlerID, channelID, &clientsInChannel) == ERROR_ok) {
+		//unmute each client in the current channel
+
+		for (int i = 0; clientsInChannel[i] != 0; i++) {
+			if (clientsInChannel[i] != ownClientID) {
+				(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, (&clientsInChannel[i]), NULL);
+			}
+		}
+	}
+	else {
+		//display error to user
+		ts3Functions.logMessage("Error finding client list", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
+	}
+
+	//free memory
+	ts3Functions.freeMemory(clientsInChannel);
 }
 void ts3plugin_onClientMoveEvent(uint64 serverConnectionHandlerID, anyID clientID, uint64 oldChannelID, uint64 newChannelID, int visibility, const char* moveMessage) {
 	
@@ -740,30 +759,16 @@ void ts3plugin_onClientMoveEvent(uint64 serverConnectionHandlerID, anyID clientI
 
 	//Unmute all muted clients when this user enters a new channel
 	if (clientID == myID) {
-		//will store clients in current channel
-		anyID* clientsInChannel;
-
-		if (ts3Functions.getChannelClientList(serverConnectionHandlerID, newChannelID, &clientsInChannel) == ERROR_ok) {
-			//unmute each client in the current channel
-
-			for (int i = 0; clientsInChannel[i] != 0; i++) {
-				if (clientsInChannel[i] != myID) {
-					(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, (&clientsInChannel[i]), NULL);
-				}
-			}
-		}
-		else {
-			//display error to user
-			ts3Functions.logMessage("Error finding client list", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
-		}
-		ts3Functions.freeMemory(clientsInChannel);
+		unmuteAllInChannel(myID, newChannelID, serverConnectionHandlerID);
 	}
 	else {
 		//Only unmute joining user when not current client.
 		(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, &clientID, NULL);
 	}
-	//TODO: fix memory leak. 
 }
+
+//End REQUIRED
+
 
 void ts3plugin_onClientMoveSubscriptionEvent(uint64 serverConnectionHandlerID, anyID clientID, uint64 oldChannelID, uint64 newChannelID, int visibility) {
 }
