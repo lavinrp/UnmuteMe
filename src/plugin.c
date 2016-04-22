@@ -723,6 +723,10 @@ void ts3plugin_onUpdateClientEvent(uint64 serverConnectionHandlerID, anyID clien
 }
 
 //REQUIRED
+
+void unmuteAllInChannel(anyID ownClientID, uint64 channelID) {
+
+}
 void ts3plugin_onClientMoveEvent(uint64 serverConnectionHandlerID, anyID clientID, uint64 oldChannelID, uint64 newChannelID, int visibility, const char* moveMessage) {
 	
 	//ID of own client
@@ -739,58 +743,26 @@ void ts3plugin_onClientMoveEvent(uint64 serverConnectionHandlerID, anyID clientI
 		//will store clients in current channel
 		anyID* clientsInChannel;
 
-		__try {
+		if (ts3Functions.getChannelClientList(serverConnectionHandlerID, newChannelID, &clientsInChannel) == ERROR_ok) {
+			//unmute each client in the current channel
 
-			if (ts3Functions.getChannelClientList(serverConnectionHandlerID, newChannelID, &clientsInChannel) == ERROR_ok) {
-				//unmute each client in the current channel
-				/*for (unsigned int i = 0; clientsInChannel[i] != NULL; i++) {
-					(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, clientsInChannel[i], NULL);
-				}*/
-				//unsigned int i = 0;
-				__try {
-					for (int i = 0; clientsInChannel[i] != 0;/*i < 3;*/  i++) {
-						//printf("Client ID: %u\n", clientsInChannel[i]);
-						if (clientsInChannel[i] != myID) {
-							(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, (&clientsInChannel[i]), NULL);
-						}
-					}
+			for (int i = 0; clientsInChannel[i] != 0; i++) {
+				if (clientsInChannel[i] != myID) {
+					(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, (&clientsInChannel[i]), NULL);
 				}
-				__except (puts("test?"), EXCEPTION_EXECUTE_HANDLER) {
-					if (ts3Functions.requestSendPrivateTextMsg(serverConnectionHandlerID, "stuff broke", clientID, NULL) != ERROR_ok) {
-						ts3Functions.logMessage("Error requesting send text message", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
-					}
-				}
-
-				/*while (clientsInChannel[i]) {
-					__try {
-						(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, clientsInChannel, NULL);
-						i++;
-					}
-					__except (puts("test?"), EXCEPTION_EXECUTE_HANDLER) {
-						if (ts3Functions.requestSendPrivateTextMsg(serverConnectionHandlerID, "stuff broke", clientID, NULL) != ERROR_ok) {
-							ts3Functions.logMessage("Error requesting send text message", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
-						}
-						break;
-					}
-
-				}*/
-			}
-			else {
-				//display error to user
-				printf("UnmuteMe ERROR: Could not unmute clients on channel jonin.");
 			}
 		}
-		__except (puts("test?"), EXCEPTION_EXECUTE_HANDLER) {
-			if (ts3Functions.requestSendPrivateTextMsg(serverConnectionHandlerID, "stuff broke before I thought it should", clientID, NULL) != ERROR_ok) {
-				ts3Functions.logMessage("Error requesting send text message", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
-			}
+		else {
+			//display error to user
+			ts3Functions.logMessage("Error finding client list", LogLevel_ERROR, "Plugin", serverConnectionHandlerID);
 		}
+		ts3Functions.freeMemory(clientsInChannel);
 	}
 	else {
 		//Only unmute joining user when not current client.
 		(*ts3Functions.requestUnmuteClients)(serverConnectionHandlerID, &clientID, NULL);
 	}
-	
+	//TODO: fix memory leak. 
 }
 
 void ts3plugin_onClientMoveSubscriptionEvent(uint64 serverConnectionHandlerID, anyID clientID, uint64 oldChannelID, uint64 newChannelID, int visibility) {
