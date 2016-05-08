@@ -1,24 +1,9 @@
-TeamSpeak 3 plugin development kit
-Copyright (c) 2008-2015 TeamSpeak Systems GmbH
+“Fix” for ACRE2 mute error
+Unmutes TS users in two situations:
+1.	Plugin user enters channel
+a.	All users in channel are unmuted
+2.	TS user (not plugin user) changes channel
+a.	Only unmutes user who changed channel
 
-Contents
-- Demo plugin sourcecode as template for developing own plugins
-- Required header files
-- Clientlib documentation
+Built using TS3 pluginsdk
 
-bin\plugins\
-  Target build directory for the sample project. Instead you might want to configure your output directory
-  to the plugins directory within your TeamSpeak 3 client installation.
-docs\
-  Clientlib documentation 
-include\
-  Required header files
-src\
-  Sourcecode of our test plugin
-
-We strongly recommend to build upon the test plugin. Plugins are required to export some special functions,
-which already exist in the test plugin. Optional functions may be removed if not used. See code comments
-for details.
-
-
-For questions please visit our forums at http://forum.teamspeak.com
